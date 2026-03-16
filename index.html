@@ -6,10 +6,29 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #map { height: 100vh; width: 100%; } 
-        body { margin: 0; padding: 0; background-color: #000; }
+        body { margin: 0; padding: 0; background-color: #000; font-family: 'Segoe UI', Arial, sans-serif; }
+        
+        /* Painel Superior Direito */
+        #clima-painel {
+            position: absolute; top: 15px; right: 15px; z-index: 1000;
+            background: rgba(0, 0, 0, 0.85); color: white; padding: 12px;
+            border-radius: 10px; border: 1px solid #555; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .info-item { margin-bottom: 8px; font-size: 13px; display: flex; align-items: center; white-space: nowrap; }
+        .info-item:last-child { margin-bottom: 0; }
+        .bolinha { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 8px; flex-shrink: 0; }
+        .nome { font-weight: bold; min-width: 65px; display: inline-block; }
+        .dados { color: #ccc; margin-left: 5px; }
     </style>
 </head>
 <body>
+
+    <div id="clima-painel">
+        <div class="info-item"><span class="bolinha" style="background:red"></span> <span class="nome">G8:</span> <span id="status-g8" class="dados">Aguardando...</span></div>
+        <div class="info-item"><span class="bolinha" style="background:violet"></span> <span class="nome">Miih:</span> <span id="status-miih" class="dados">Aguardando...</span></div>
+        <div class="info-item"><span class="bolinha" style="background:blue"></span> <span class="nome">Gustavo:</span> <span id="status-gustavo" class="dados">Aguardando...</span></div>
+    </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -22,53 +41,68 @@
         const db = getDatabase(app);
 
         const map = L.map('map').setView([-15.78, -47.92], 4);
-
-        // --- CAMADA GOOGLE HYBRID (SATÉLITE + RUAS EM PORTUGUÊS) ---
-        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-            attribution: 'Map data © Google'
-        }).addTo(map);
+        
+        // Camada Google Hybrid (Satélite + Nomes)
+        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { attribution: '© Google' }).addTo(map);
 
         const criarIcone = (cor) => new L.Icon({
             iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${cor}.png`,
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41]
+            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
         });
 
-        const mG8 = L.marker([-15.78, -47.92], {icon: criarIcone('red')}).addTo(map).bindPopup("G8");
-        const mMiih = L.marker([-15.78, -47.92], {icon: criarIcone('violet')}).addTo(map).bindPopup("Miih");
-        const mGustavo = L.marker([-15.78, -47.92], {icon: criarIcone('blue')}).addTo(map).bindPopup("Gustavo");
+        const marcadores = {
+            g8: L.marker([-15.78, -47.92], {icon: criarIcone('red')}).addTo(map),
+            miih: L.marker([-15.78, -47.92], {icon: criarIcone('violet')}).addTo(map),
+            gustavo: L.marker([-15.78, -47.92], {icon: criarIcone('blue')}).addTo(map)
+        };
 
-        function atualizarPosicao(snapshot, marcador) {
+        async function buscarClima(lat, lon) {
+            try {
+                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                const data = await response.json();
+                return data.current_weather.temperature + "°C";
+            } catch (e) { return "--°C"; }
+        }
+
+        async function atualizar(snapshot, id) {
             const data = snapshot.val();
             if (!data) return;
+
             const keys = Object.keys(data);
             const lastKey = keys[keys.length - 1];
-            const registro = data.lat ? data : data[lastKey];
+            const reg = data.lat ? data : data[lastKey];
 
-            let lat, lon;
-            if (registro.location && registro.location._) {
-                const texto = registro.location._;
-                const latMatch = texto.match(/lat=([^&]+)/);
-                const lonMatch = texto.match(/lon=([^&]+)/);
-                if (latMatch && lonMatch) {
-                    lat = parseFloat(latMatch[1]);
-                    lon = parseFloat(lonMatch[1]);
-                }
+            let lat, lon, vel;
+            
+            // Localização
+            if (reg.location && reg.location._) {
+                const txt = reg.location._;
+                const la = txt.match(/lat=([^&]+)/);
+                const lo = txt.match(/lon=([^&]+)/);
+                if(la && lo) { lat = parseFloat(la[1]); lon = parseFloat(lo[1]); }
             } else {
-                lat = registro.lat; lon = registro.lon;
+                lat = reg.lat; lon = reg.lon;
             }
 
+            // Velocidade (converte nós para km/h)
+            vel = reg.speed ? (parseFloat(reg.speed) * 1.852).toFixed(0) : "0";
+
             if (lat && lon && lat !== 0) {
+                const marcador = marcadores[id];
                 marcador.setLatLng([lat, lon]);
+                
+                const temp = await buscarClima(lat, lon);
+                const infoTexto = `${temp} | ${vel} km/h`;
+                
+                document.getElementById(`status-${id}`).innerHTML = infoTexto;
+                marcador.bindPopup(`<b>${id.toUpperCase()}</b><br>${infoTexto}`);
             }
         }
 
-        onValue(ref(db, 'g8'), (s) => atualizarPosicao(s, mG8));
-        onValue(ref(db, 'miih'), (s) => atualizarPosicao(s, mMiih));
-        onValue(ref(db, 'gustavo'), (s) => atualizarPosicao(s, mGustavo));
+        onValue(ref(db, 'g8'), (s) => atualizar(s, 'g8'));
+        onValue(ref(db, 'miih'), (s) => atualizar(s, 'miih'));
+        onValue(ref(db, 'gustavo'), (s) => atualizar(s, 'gustavo'));
 
     </script>
 </body>
