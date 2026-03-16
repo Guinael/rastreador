@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Radar de Monitoramento Pro</title>
+    <title>Radar de Monitoramento Pro - Versão Final</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
@@ -14,7 +14,7 @@
         #clima-painel {
             position: absolute; top: 15px; right: 15px; z-index: 1000;
             background: rgba(0, 0, 0, 0.85); color: white; padding: 15px;
-            border-radius: 12px; border: 1px solid #444; min-width: 220px;
+            border-radius: 12px; border: 1px solid #444; min-width: 250px;
         }
 
         .painel-header {
@@ -22,40 +22,33 @@
             margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 8px;
         }
 
-        .botoes-topo { display: flex; gap: 8px; }
-
-        .btn-acao {
-            cursor: pointer; font-size: 20px; transition: 0.3s;
-            background: rgba(255,255,255,0.1); padding: 5px; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center; color: white;
-        }
-        .btn-acao.ativo { background: #00ff00; box-shadow: 0 0 10px #00ff00; }
-
         .info-item { 
-            margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; 
-            cursor: pointer; transition: 0.3s; border-radius: 8px;
+            margin-bottom: 12px; border-bottom: 1px solid #333; padding-bottom: 8px; 
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .info-item:hover { background: rgba(255, 255, 255, 0.1); padding-left: 5px; }
 
-        .nome { font-weight: bold; display: block; margin-bottom: 2px; font-size: 14px; }
+        .user-data { cursor: pointer; flex-grow: 1; }
+
+        .btn-lock {
+            background: rgba(255,255,255,0.1); border: none; color: white;
+            padding: 8px; border-radius: 50%; cursor: pointer; transition: 0.3s;
+            margin-left: 10px; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;
+        }
+        
+        .btn-lock.ativo { background: #00ff00; color: black; box-shadow: 0 0 10px #00ff00; }
+
+        .nome { font-weight: bold; font-size: 14px; display: block; }
         .localizacao { font-size: 12px; color: #00ff00; font-weight: bold; display: block; }
         .detalhes { font-size: 11px; color: #aaa; display: block; }
         
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
         .online { background-color: #00ff00; box-shadow: 0 0 5px #00ff00; }
-        .alerta { background-color: #ffff00; box-shadow: 0 0 5px #ffff00; }
-        .offline { background-color: #ff4d4d; box-shadow: 0 0 5px #ff4d4d; }
 
         .emoji-pin { font-size: 24px; text-align: center; line-height: 1; filter: drop-shadow(0 0 2px black); }
 
-        /* Customização do painel de rotas para o tema escuro */
         .leaflet-routing-container {
             background: rgba(0, 0, 0, 0.9) !important;
-            color: #fff !important;
-            font-size: 11px;
-            max-height: 250px;
-            overflow-y: auto;
-            border: 1px solid #444;
+            color: #fff !important; font-size: 11px; max-height: 180px; overflow-y: auto;
         }
     </style>
 </head>
@@ -63,29 +56,38 @@
 
     <div id="clima-painel">
         <div class="painel-header">
-            <span style="font-size: 12px; color: #aaa; font-weight: bold;">MONITORAMENTO</span>
-            <div class="botoes-topo">
-                <div id="btn-traff" class="btn-acao" onclick="toggleTransito()" title="Trânsito">🚦</div>
-                <div class="btn-acao" onclick="limparRota()" title="Limpar Rota" style="color: #ff4d4d; font-weight: bold;">✕</div>
+            <span style="font-size: 10px; color: #aaa; font-weight: bold;">MONITORAMENTO ATIVO</span>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-lock" onclick="toggleTransito()" title="Trânsito">🚦</button>
+                <button class="btn-lock" onclick="limparRota()" title="Limpar Rota" style="color:#ff4d4d;">✕</button>
             </div>
         </div>
 
-        <div class="info-item" onclick="focarDron('g8')">
-            <span class="nome" style="color: #ff4d4d;">👑 G8</span>
-            <span id="loc-g8" class="localizacao">Conectando...</span>
-            <span id="detalhes-g8" class="detalhes">--</span>
+        <div class="info-item">
+            <div class="user-data" onclick="focarDron('g8')">
+                <span class="nome" style="color: #ff4d4d;">👑 G8</span>
+                <span id="loc-g8" class="localizacao">Conectando...</span>
+                <span id="detalhes-g8" class="detalhes">--</span>
+            </div>
+            <button id="lock-g8" class="btn-lock" onclick="toggleLock('g8')" title="Seguir G8">🔒</button>
         </div>
 
-        <div class="info-item" onclick="focarDron('miih')">
-            <span class="nome" style="color: #ee82ee;">🌸 Miih</span>
-            <span id="loc-miih" class="localizacao">Conectando...</span>
-            <span id="detalhes-miih" class="detalhes">--</span>
+        <div class="info-item">
+            <div class="user-data" onclick="focarDron('miih')">
+                <span class="nome" style="color: #ee82ee;">🌸 Miih</span>
+                <span id="loc-miih" class="localizacao">Conectando...</span>
+                <span id="detalhes-miih" class="detalhes">--</span>
+            </div>
+            <button id="lock-miih" class="btn-lock" onclick="toggleLock('miih')" title="Seguir Miih">🔒</button>
         </div>
 
-        <div class="info-item" onclick="focarDron('gustavo')">
-            <span class="nome" style="color: #4d94ff;">🤖 Gustavo</span>
-            <span id="loc-gustavo" class="localizacao">Conectando...</span>
-            <span id="detalhes-gustavo" class="detalhes">--</span>
+        <div class="info-item">
+            <div class="user-data" onclick="focarDron('gustavo')">
+                <span class="nome" style="color: #4d94ff;">🤖 Gustavo</span>
+                <span id="loc-gustavo" class="localizacao">Conectando...</span>
+                <span id="detalhes-gustavo" class="detalhes">--</span>
+            </div>
+            <button id="lock-gustavo" class="btn-lock" onclick="toggleLock('gustavo')" title="Seguir Gustavo">🔒</button>
         </div>
     </div>
 
@@ -103,84 +105,54 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Mapa Base (Satélite Google)
+        // --- MAPA ---
         const map = L.map('map').setView([-22.4818, -44.0492], 15);
         L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}').addTo(map);
 
         // --- BUSCA DE ENDEREÇO ---
-        const geocoder = L.Control.geocoder({
-            defaultMarkGeocode: false,
-            placeholder: "Pesquisar endereço...",
-            position: 'topleft'
-        }).addTo(map);
-
-        // Quando um endereço é selecionado na busca
-        geocoder.on('markgeocode', function(e) {
+        const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, position: 'topleft' }).addTo(map);
+        geocoder.on('markgeocode', (e) => {
             const latlng = e.geocode.center;
             map.flyTo(latlng, 17);
-            
-            L.popup()
-                .setLatLng(latlng)
-                .setContent(`
-                    <div style="color:#000; padding:5px;">
-                        <b>${e.geocode.name}</b><br><br>
-                        <button onclick="irAte(${latlng.lat}, ${latlng.lng})" 
-                                style="width:100%; background:#00ff00; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">
-                            🚀 INICIAR NAVEGAÇÃO
-                        </button>
-                    </div>
-                `)
-                .openOn(map);
+            L.popup().setLatLng(latlng).setContent(`<b>${e.geocode.name}</b><br><button onclick="irAte(${latlng.lat}, ${latlng.lng})" style="width:100%; margin-top:10px; cursor:pointer;">🚀 IR PARA AQUI</button>`).openOn(map);
         });
 
-        // --- SISTEMA DE ROTA (GPS) ---
+        // --- GPS E TRÂNSITO ---
         let controleRota = null;
-        window.limparRota = function() {
-            if (controleRota) {
-                map.removeControl(controleRota);
-                controleRota = null;
-            }
+        let transitoAtivo = false;
+        const googleTraffic = L.tileLayer('https://mt1.google.com/vt?lyrs=h@159000000,traffic|seconds_into_week:-1&style=3&x={x}&y={y}&z={z}', { maxZoom: 20 });
+
+        window.limparRota = () => { if(controleRota) { map.removeControl(controleRota); controleRota = null; } };
+        window.toggleTransito = () => {
+            transitoAtivo ? map.removeLayer(googleTraffic) : googleTraffic.addTo(map);
+            transitoAtivo = !transitoAtivo;
         };
 
-        window.irAte = function(destLat, destLon) {
+        window.irAte = (lat, lon) => {
             limparRota();
-            
-            // Pede a localização atual do dispositivo
             map.locate({setView: false});
-            
-            map.once('locationfound', function(e) {
+            map.once('locationfound', (e) => {
                 controleRota = L.Routing.control({
-                    waypoints: [
-                        L.latLng(e.latlng), // Onde você está
-                        L.latLng(destLat, destLon) // Para onde quer ir
-                    ],
-                    language: 'pt-BR',
-                    routeWhileDragging: true,
-                    lineOptions: { styles: [{ color: '#00ff00', weight: 6, opacity: 0.8 }] }
+                    waypoints: [ L.latLng(e.latlng), L.latLng(lat, lon) ],
+                    language: 'pt-BR'
                 }).addTo(map);
                 map.closePopup();
             });
-
-            map.once('locationerror', function() {
-                alert("Não foi possível acessar sua localização atual para iniciar a rota.");
-            });
         };
 
-        // --- TRÂNSITO ---
-        const transitoURL = 'https://mt1.google.com/vt?lyrs=h@159000000,traffic|seconds_into_week:-1&style=3&x={x}&y={y}&z={z}';
-        const googleTraffic = L.tileLayer(transitoURL, { maxZoom: 20 });
-        let transitoAtivo = false;
-        window.toggleTransito = function() {
-            const btn = document.getElementById('btn-traff');
-            if (!transitoAtivo) {
-                googleTraffic.addTo(map);
-                btn.classList.add('ativo');
-            } else {
-                map.removeLayer(googleTraffic);
-                btn.classList.remove('ativo');
-            }
-            transitoAtivo = !transitoAtivo;
+        // --- PONTOS DE INTERESSE (POIs) ---
+        const pontosInteresse = {
+            casa: { nome: "Casa", lat: -22.4818724, lon: -44.0492843, raio: 25, cor: '#00ff00', icone: "🏠" },
+            casaVo: { nome: "Casa da Vó", lat: -22.4816722, lon: -44.0503214, raio: 25, cor: '#ffa500', icone: "👵" },
+            ronoel: { nome: "Ronoel", lat: -22.47913780425358, lon: -44.0485040059705, raio: 10, cor: '#ffffff', icone: "📍" },
+            madson: { nome: "Madson", lat: -22.480922713559334, lon: -44.04805947755113, raio: 10, cor: '#ffffff', icone: "📍" },
+            padaria: { nome: "Padaria Du Vale", lat: -22.480842421901734, lon: -44.04714813233181, raio: 10, cor: '#ffa500', icone: "🥐" }
         };
+
+        // Desenhar círculos no mapa
+        Object.values(pontosInteresse).forEach(p => {
+            L.circle([p.lat, p.lon], { radius: p.raio, color: p.cor, fillOpacity: 0.1, weight: 1 }).addTo(map).bindPopup(p.nome);
+        });
 
         // --- MONITORAMENTO ---
         const criarEmojiIcon = (emoji) => L.divIcon({
@@ -189,21 +161,44 @@
         });
 
         const drones = {
-            g8: { marker: L.marker([0,0], {icon: criarEmojiIcon('👑')}).addTo(map), trail: L.polyline([], {color: '#ff4d4d', weight: 3}).addTo(map), ultimaVez: 0 },
-            miih: { marker: L.marker([0,0], {icon: criarEmojiIcon('🌸')}).addTo(map), trail: L.polyline([], {color: '#ee82ee', weight: 3}).addTo(map), ultimaVez: 0 },
-            gustavo: { marker: L.marker([0,0], {icon: criarEmojiIcon('🤖')}).addTo(map), trail: L.polyline([], {color: '#4d94ff', weight: 3}).addTo(map), ultimaVez: 0 }
+            g8: { marker: L.marker([0,0], {icon: criarEmojiIcon('👑')}).addTo(map), ultimaVez: 0, locked: false },
+            miih: { marker: L.marker([0,0], {icon: criarEmojiIcon('🌸')}).addTo(map), ultimaVez: 0, locked: false },
+            gustavo: { marker: L.marker([0,0], {icon: criarEmojiIcon('🤖')}).addTo(map), ultimaVez: 0, locked: false }
         };
 
-        window.focarDron = function(id) {
+        window.toggleLock = (id) => {
+            // Desativa outros bloqueios para focar em apenas um
+            Object.keys(drones).forEach(key => {
+                if(key !== id) {
+                    drones[key].locked = false;
+                    document.getElementById(`lock-${key}`).classList.remove('ativo');
+                    document.getElementById(`lock-${key}`).innerHTML = "🔒";
+                }
+            });
+            drones[id].locked = !drones[id].locked;
+            const btn = document.getElementById(`lock-${id}`);
+            btn.classList.toggle('ativo');
+            btn.innerHTML = drones[id].locked ? "🔓" : "🔒";
+            if(drones[id].locked) map.panTo(drones[id].marker.getLatLng());
+        };
+
+        window.focarDron = (id) => {
             const pos = drones[id].marker.getLatLng();
             if (pos.lat !== 0) {
                 map.flyTo(pos, 17);
-                drones[id].marker.bindPopup(`
-                    <b>${id.toUpperCase()}</b><br><br>
-                    <button onclick="irAte(${pos.lat}, ${pos.lng})" style="cursor:pointer;">🚗 Ir até ele</button>
-                `).openPopup();
+                drones[id].marker.bindPopup(`<b>${id.toUpperCase()}</b><br><button onclick="irAte(${pos.lat}, ${pos.lng})">🚗 Rota GPS</button>`).openPopup();
             }
         };
+
+        function verificarLocal(lat, lon) {
+            for (let chave in pontosInteresse) {
+                let p = pontosInteresse[chave];
+                if (map.distance([lat, lon], [p.lat, p.lon]) <= p.raio) {
+                    return `${p.icone} ${p.nome}`;
+                }
+            }
+            return "🚗 Em Trânsito";
+        }
 
         async function atualizar(snapshot, id) {
             const data = snapshot.val();
@@ -224,25 +219,16 @@
                 const pos = [lat, lon];
                 drones[id].marker.setLatLng(pos);
                 drones[id].ultimaVez = Date.now();
-                drones[id].trail.addLatLng(pos);
-                
+
+                if (drones[id].locked) map.panTo(pos, { animate: true, duration: 0.5 });
+
+                const localStatus = verificarLocal(lat, lon);
                 const hora = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                document.getElementById(`loc-${id}`).innerText = "Localizado";
-                document.getElementById(`detalhes-${id}`).innerHTML = `<span id="dot-${id}" class="status-dot online"></span> Ativo: ${hora}`;
+                
+                document.getElementById(`loc-${id}`).innerText = localStatus;
+                document.getElementById(`detalhes-${id}`).innerHTML = `<span id="dot-${id}" class="status-dot online"></span> Sincronizado: ${hora}`;
             }
         }
-
-        setInterval(() => {
-            const agora = Date.now();
-            Object.keys(drones).forEach(id => {
-                const dot = document.getElementById(`dot-${id}`);
-                if (!dot) return;
-                const diff = (agora - drones[id].ultimaVez) / 1000 / 60;
-                if (diff > 10) dot.className = "status-dot offline";
-                else if (diff > 5) dot.className = "status-dot alerta";
-                else dot.className = "status-dot online";
-            });
-        }, 10000);
 
         onValue(ref(db, 'g8'), (s) => atualizar(s, 'g8'));
         onValue(ref(db, 'miih'), (s) => atualizar(s, 'miih'));
