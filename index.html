@@ -6,24 +6,32 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #map { height: 100vh; width: 100%; } 
-        body { margin: 0; padding: 0; }
+        body { margin: 0; padding: 0; background-color: #000; }
     </style>
 </head>
 <body>
     <div id="map"></div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        const firebaseConfig = { databaseURL: "https://meu-rastreador-7a0a8-default-rtdb.firebaseio.com/" };
+        const firebaseConfig = { 
+            databaseURL: "https://meu-rastreador-7a0a8-default-rtdb.firebaseio.com/" 
+        };
+        
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
         const map = L.map('map').setView([-15.78, -47.92], 4);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // CONFIGURAÇÃO DOS ÍCONES (Cores solicitadas)
+        // --- CAMADA DE SATÉLITE (A MUDANÇA ESTÁ AQUI) ---
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EBP, and the GIS User Community'
+        }).addTo(map);
+        // -----------------------------------------------
+
         const criarIcone = (cor) => new L.Icon({
             iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${cor}.png`,
             shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
@@ -33,41 +41,39 @@
             shadowSize: [41, 41]
         });
 
-        const vermelhoG8 = criarIcone('red');
-        const rosaMiih = criarIcone('violet'); // Violeta é o mais próximo do rosa
-        const azulGustavo = criarIcone('blue'); // Azul escuro padrão
+        const mG8 = L.marker([-15.78, -47.92], {icon: criarIcone('red')}).addTo(map).bindPopup("G8");
+        const mMiih = L.marker([-15.78, -47.92], {icon: criarIcone('violet')}).addTo(map).bindPopup("Miih");
+        const mGustavo = L.marker([-15.78, -47.92], {icon: criarIcone('blue')}).addTo(map).bindPopup("Gustavo");
 
-        // Criando Marcadores
-        let mG8 = L.marker([-15.78, -47.92], {icon: vermelhoG8}).addTo(map).bindPopup("G8");
-        let mMiih = L.marker([-15.78, -47.92], {icon: rosaMiih}).addTo(map).bindPopup("Miih");
-        let mGustavo = L.marker([-15.78, -47.92], {icon: azulGustavo}).addTo(map).bindPopup("Gustavo");
-
-        function atualizar(snapshot, marcador) {
+        function atualizarPosicao(snapshot, marcador) {
             const data = snapshot.val();
             if (!data) return;
-
             const keys = Object.keys(data);
             const lastKey = keys[keys.length - 1];
-            const reg = data.lat ? data : data[lastKey];
+            const registro = data.lat ? data : data[lastKey];
 
             let lat, lon;
-            if (reg.location && reg.location._) {
-                const txt = reg.location._;
-                const la = txt.match(/lat=([^&]+)/);
-                const lo = txt.match(/lon=([^&]+)/);
-                if (la && lo) { lat = parseFloat(la[1]); lon = parseFloat(lo[1]); }
+            if (registro.location && registro.location._) {
+                const texto = registro.location._;
+                const latMatch = texto.match(/lat=([^&]+)/);
+                const lonMatch = texto.match(/lon=([^&]+)/);
+                if (latMatch && lonMatch) {
+                    lat = parseFloat(latMatch[1]);
+                    lon = parseFloat(lonMatch[1]);
+                }
             } else {
-                lat = reg.lat; lon = reg.lon;
+                lat = registro.lat; lon = registro.lon;
             }
 
-            if (lat && lon) {
+            if (lat && lon && lat !== 0) {
                 marcador.setLatLng([lat, lon]);
             }
         }
 
-        onValue(ref(db, 'g8'), (s) => atualizar(s, mG8));
-        onValue(ref(db, 'miih'), (s) => atualizar(s, mMiih));
-        onValue(ref(db, 'gustavo'), (s) => atualizar(s, mGustavo));
+        onValue(ref(db, 'g8'), (s) => atualizarPosicao(s, mG8));
+        onValue(ref(db, 'miih'), (s) => atualizarPosicao(s, mMiih));
+        onValue(ref(db, 'gustavo'), (s) => atualizarPosicao(s, mGustavo));
+
     </script>
 </body>
 </html>
