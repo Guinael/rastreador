@@ -13,7 +13,13 @@
             background: rgba(0, 0, 0, 0.85); color: white; padding: 15px;
             border-radius: 12px; border: 1px solid #444; min-width: 230px;
         }
-        .info-item { margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; }
+        .info-item { 
+            margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 8px; 
+            cursor: pointer; transition: 0.3s;
+        }
+        /* Efeito ao passar o mouse no nome */
+        .info-item:hover { background: rgba(255, 255, 255, 0.1); border-radius: 8px; padding-left: 5px; }
+        
         .info-item:last-child { border-bottom: none; }
         .nome { font-weight: bold; display: block; margin-bottom: 2px; font-size: 14px; }
         .localizacao { font-size: 12px; color: #00ff00; font-weight: bold; display: block; }
@@ -34,17 +40,17 @@
 <body>
 
     <div id="clima-painel">
-        <div class="info-item">
+        <div class="info-item" onclick="focarDron('g8')">
             <span class="nome" style="color: #ff4d4d;">👑 G8</span>
             <span id="loc-g8" class="localizacao">Conectando...</span>
             <span id="detalhes-g8" class="detalhes">--</span>
         </div>
-        <div class="info-item">
+        <div class="info-item" onclick="focarDron('miih')">
             <span class="nome" style="color: #ee82ee;">🌸 Miih</span>
             <span id="loc-miih" class="localizacao">Conectando...</span>
             <span id="detalhes-miih" class="detalhes">--</span>
         </div>
-        <div class="info-item">
+        <div class="info-item" onclick="focarDron('gustavo')">
             <span class="nome" style="color: #4d94ff;">🤖 Gustavo</span>
             <span id="loc-gustavo" class="localizacao">Conectando...</span>
             <span id="detalhes-gustavo" class="detalhes">--</span>
@@ -65,7 +71,6 @@
         const map = L.map('map').setView([-22.4818, -44.0492], 15);
         L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}').addTo(map);
 
-        // --- ZONAS ATUALIZADAS (INCLUINDO RECREIO) ---
         const pontosInteresse = {
             casa: { nome: "Casa", lat: -22.4818724, lon: -44.0492843, raio: 25, cor: '#00ff00' },
             casaVo: { nome: "Casa da Vó", lat: -22.4816722, lon: -44.0503214, raio: 25, cor: '#ffa500' },
@@ -93,11 +98,19 @@
             gustavo: { marker: L.marker([-22.4818, -44.0492], {icon: criarEmojiIcon('🤖')}).addTo(map), trail: L.polyline([], {color: '#4d94ff', weight: 3, opacity: 0.6}).addTo(map), ultimaVez: 0 }
         };
 
+        // Função Global para o clique no painel
+        window.focarDron = function(id) {
+            const pos = drones[id].marker.getLatLng();
+            if (pos.lat !== 0) {
+                map.flyTo(pos, 17, { animate: true, duration: 1.5 });
+                drones[id].marker.openPopup();
+            }
+        };
+
         function verificarLocal(id, lat, lon) {
             for (let chave in pontosInteresse) {
                 let p = pontosInteresse[chave];
                 let dist = map.distance([lat, lon], [p.lat, p.lon]);
-                
                 if (dist <= p.raio) {
                     if (chave === 'casa') return "📍 Em Casa";
                     if (chave === 'casaVo') return "👵 Casa da Vó";
