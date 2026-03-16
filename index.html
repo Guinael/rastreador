@@ -50,7 +50,7 @@
             .player-controls { gap: 15px !important; }
             .play-btn { width: 50px !important; height: 50px !important; }
             #track-name { position: static !important; text-align: center; margin-bottom: 5px; width: 100%; }
-            .vol-container { display: none !important; } /* Oculta volume no celular para sobrar espaço */
+            .vol-container { display: none !important; } 
             #chat-box { width: 90% !important; left: 5%; right: 5%; height: 45vh !important; bottom: 120px !important; }
             #chat-toggle { bottom: 120px !important; width: 50px !important; height: 50px !important; }
             #video-container { width: 90% !important; left: 5% !important; bottom: 120px !important; }
@@ -112,7 +112,7 @@
 
         <div class="info-item">
             <div class="user-data" onclick="focarDron('g8')">
-                <span class="nome" style="color: #ff4d4d;">👑 G8</span>
+                <span class="nome" style="color: #ff4d4d;"><span id="icon-g8">👑</span> <span id="name-g8">G8</span></span>
                 <span id="loc-g8" class="localizacao">Conectando...</span>
                 <span id="detalhes-g8" class="detalhes">--</span>
             </div>
@@ -121,7 +121,7 @@
 
         <div class="info-item">
             <div class="user-data" onclick="focarDron('miih')">
-                <span class="nome" style="color: #ee82ee;">🌸 Miih</span>
+                <span class="nome" style="color: #ee82ee;"><span id="icon-miih">🌸</span> <span id="name-miih">Miih</span></span>
                 <span id="loc-miih" class="localizacao">Conectando...</span>
                 <span id="detalhes-miih" class="detalhes">--</span>
             </div>
@@ -130,7 +130,7 @@
 
         <div class="info-item">
             <div class="user-data" onclick="focarDron('gustavo')">
-                <span class="nome" style="color: #4d94ff;">🤖 Gustavo</span>
+                <span class="nome" style="color: #4d94ff;"><span id="icon-gustavo">🤖</span> <span id="name-gustavo">Gustavo</span></span>
                 <span id="loc-gustavo" class="localizacao">Conectando...</span>
                 <span id="detalhes-gustavo" class="detalhes">--</span>
             </div>
@@ -184,7 +184,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- LÓGICA DE IDENTIFICAÇÃO ---
         window.fazerLogin = () => {
             const nome = document.getElementById('user-name').value.trim();
             if(nome.length >= 2) {
@@ -193,7 +192,6 @@
             } else { alert("Por favor, digite seu nome."); }
         };
 
-        // --- LÓGICA DO CHAT ATUALIZADA ---
         window.toggleChat = () => {
             const chat = document.getElementById('chat-box');
             chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
@@ -222,7 +220,6 @@
             content.scrollTop = content.scrollHeight;
         });
 
-        // --- MAPA E TRACKING ---
         const map = L.map('map').setView([-22.4818, -44.0492], 15);
         L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}').addTo(map);
 
@@ -272,7 +269,6 @@
             gustavo: { marker: L.marker([0,0], {icon: L.divIcon({html:'<div class="emoji-pin">🤖</div>', className:'custom-div-icon', iconSize:[30,30]})}).addTo(map), locked: false }
         };
 
-        // --- TRAVAR COM ZOOM MÁXIMO ---
         window.toggleLock = (id) => {
             Object.keys(drones).forEach(key => {
                 if(key !== id) {
@@ -288,7 +284,7 @@
             
             if(drones[id].locked) {
                 const pos = drones[id].marker.getLatLng();
-                if(pos.lat !== 0) map.setView(pos, 18); // ZOOM MÁXIMO AO TRAVAR
+                if(pos.lat !== 0) map.setView(pos, 18);
             }
         };
 
@@ -306,6 +302,12 @@
             const data = snapshot.val(); if (!data) return;
             const keys = Object.keys(data);
             const reg = data.lat ? data : data[keys[keys.length - 1]];
+            
+            // CORREÇÃO: Altera apenas o texto dentro do span, mantendo a cor CSS do pai
+            if(reg.nome) { 
+                document.getElementById(`name-${id}`).innerText = reg.nome; 
+            }
+
             let lat = reg.lat, lon = reg.lon;
             if (reg.location && reg.location._) {
                 try {
