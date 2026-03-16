@@ -76,6 +76,19 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
         #main-media { width: 100%; display: block; }
+
+        /* NOVO: CSS VOLUME E CHAT */
+        .vol-container { display: flex; align-items: center; gap: 5px; margin-left: 10px; }
+        #vol-control { width: 70px; cursor: pointer; accent-color: #00ff00; }
+        #chat-box { 
+            position: absolute; bottom: 100px; right: 20px; width: 280px; height: 350px; 
+            background: rgba(0,0,0,0.9); border: 1px solid #444; border-radius: 8px; 
+            z-index: 1000; display: none; flex-direction: column;
+        }
+        #chat-content { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; color: #fff; }
+        #chat-input-wrap { display: flex; border-top: 1px solid #333; padding: 5px; }
+        #chat-input-wrap input { flex: 1; background: #222; border: none; color: #fff; padding: 5px; border-radius: 4px; }
+        #chat-toggle { position: absolute; bottom: 100px; right: 20px; z-index: 1001; background: #00ff00; border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -117,6 +130,15 @@
         </div>
     </div>
 
+    <button id="chat-toggle" onclick="toggleChat()">💬</button>
+    <div id="chat-box">
+        <div style="padding: 8px; border-bottom: 1px solid #333; font-size: 10px; color: #00ff00;">CHAT OPERACIONAL</div>
+        <div id="chat-content"></div>
+        <div id="chat-input-wrap">
+            <input type="text" id="chat-msg" placeholder="Mensagem..." onkeypress="if(event.key==='Enter') sendChat()">
+        </div>
+    </div>
+
     <div id="video-container">
         <video id="main-media"></video>
     </div>
@@ -138,6 +160,11 @@
                 <div id="progress-fill"></div>
             </div>
             <span id="time-end" class="time-label">0:00</span>
+            
+            <div class="vol-container">
+                <span style="font-size: 12px;">🔊</span>
+                <input type="range" id="vol-control" min="0" max="1" step="0.1" value="1" oninput="mediaObj.volume = this.value">
+            </div>
         </div>
 
         <input type="file" id="media-upload" accept="audio/*,video/*" multiple style="display: none;">
@@ -151,16 +178,40 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = { databaseURL: "https://meu-rastreador-7a0a8-default-rtdb.firebaseio.com/" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // --- LÓGICA DO CHAT ---
+        window.toggleChat = () => {
+            const chat = document.getElementById('chat-box');
+            chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
+        };
+
+        window.sendChat = () => {
+            const input = document.getElementById('chat-msg');
+            if(input.value.trim()){
+                push(ref(db, 'mensagens'), { texto: input.value, timestamp: serverTimestamp() });
+                input.value = '';
+            }
+        };
+
+        onValue(ref(db, 'mensagens'), (snap) => {
+            const content = document.getElementById('chat-content');
+            content.innerHTML = '';
+            snap.forEach(m => {
+                const data = m.val();
+                content.innerHTML += `<div><span style="color:#00ff00">></span> ${data.texto}</div>`;
+            });
+            content.scrollTop = content.scrollHeight;
+        });
+
+        // --- RESTANTE DO SEU CÓDIGO ORIGINAL ---
         const map = L.map('map').setView([-22.4818, -44.0492], 15);
         L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}').addTo(map);
 
-        // --- LÓGICA DO PLAYER HÍBRIDO COM PLAYLIST ---
         const mediaObj = document.getElementById('main-media');
         const playBtnIcon = document.getElementById('master-play');
         const progBar = document.getElementById('progress-fill');
@@ -169,7 +220,6 @@
         
         let playlist = [];
         let currentTrackIndex = 0;
-
         window.mediaObj = mediaObj;
 
         document.getElementById('media-upload').onchange = function(e) {
@@ -185,7 +235,6 @@
             if (playlist.length === 0) return;
             const file = playlist[index];
             const isVideo = file.type.startsWith('video');
-            
             vContainer.style.display = isVideo ? 'block' : 'none';
             mediaObj.src = URL.createObjectURL(file);
             trackTitle.innerText = `${index + 1}/${playlist.length} ${isVideo ? "🎬" : "🎵"} ${file.name.toUpperCase()}`;
@@ -200,8 +249,7 @@
         };
 
         window.stopMedia = () => {
-            mediaObj.pause();
-            mediaObj.src = "";
+            mediaObj.pause(); mediaObj.src = "";
             vContainer.style.display = "none";
             trackTitle.innerText = "SEM MÍDIA";
             progBar.style.width = "0%";
@@ -223,7 +271,6 @@
             loadTrack(currentTrackIndex);
         };
 
-        // Passa automaticamente para a próxima quando acaba
         mediaObj.onended = () => {
             if (playlist.length > 1) nextTrack();
             else playBtnIcon.innerText = "▶";
@@ -252,7 +299,6 @@
             return `${m}:${sec < 10 ? '0' : ''}${sec}`;
         }
 
-        // --- CÓDIGO DO MAPA E MONITORAMENTO (SEM ALTERAÇÕES) ---
         const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, position: 'topleft' }).addTo(map);
         geocoder.on('markgeocode', (e) => {
             const latlng = e.geocode.center;
