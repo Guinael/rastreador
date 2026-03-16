@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Rastreador</title>
+    <title>Rastreador de Família</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>#map { height: 100vh; width: 100%; } body { margin: 0; }</style>
 </head>
@@ -17,16 +17,51 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // Mapa inicializado no Brasil (Brasília)
+        // Mapa começa no Brasil
         const map = L.map('map').setView([-15.78, -47.92], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // Ícones Coloridos Personalizados
+        // Ícones Coloridos
         const redIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
-        const pinkIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }); // Usando violeta para rosa
-        const darkBlueIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] }); // Usando preto/escuro para azul escuro
+        const greenIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
 
-        // Criando os 3 Marcadores com as novas cores
-        let markerG8 = L.marker([-15.78, -47.92], {icon: redIcon}).addTo(map).bindPopup("<b>G8</b>");
-        let markerMiih = L.marker([-15.78, -47.92], {icon: pinkIcon}).addTo(map).bindPopup("<b>Miih</b>");
-        let markerGustavo = L.marker([-
+        // Criando os 3 Marcadores
+        let markerG8 = L.marker([-15.78, -47.92]).addTo(map).bindPopup("<b>G8</b>");
+        let markerMiih = L.marker([-15.78, -47.92], {icon: redIcon}).addTo(map).bindPopup("<b>Miih</b>");
+        let markerGustavo = L.marker([-15.78, -47.92], {icon: greenIcon}).addTo(map).bindPopup("<b>Gustavo</b>");
+
+        // Função Única para processar os dados de qualquer celular
+        function atualizarPosicao(data, marcador) {
+            if (data) {
+                const keys = Object.keys(data);
+                const lastKey = keys[keys.length - 1];
+                const registro = data.lat ? data : data[lastKey]; // Aceita formato direto ou lista do Traccar
+
+                let lat, lon;
+                if (registro.location && registro.location._) {
+                    const texto = registro.location._;
+                    const latMatch = texto.match(/lat=([^&]+)/);
+                    const lonMatch = texto.match(/lon=([^&]+)/);
+                    if (latMatch && lonMatch) {
+                        lat = parseFloat(latMatch[1]);
+                        lon = parseFloat(lonMatch[1]);
+                    }
+                } else {
+                    lat = registro.lat;
+                    lon = registro.lon;
+                }
+
+                if (lat && lon && lat !== 0) {
+                    marcador.setLatLng([lat, lon]);
+                }
+            }
+        }
+
+        // Fica ouvindo os 3 caminhos no Firebase
+        onValue(ref(db, 'g8'), (snap) => atualizarPosicao(snap.val(), markerG8));
+        onValue(ref(db, 'miih'), (snap) => atualizarPosicao(snap.val(), markerMiih));
+        onValue(ref(db, 'gustavo'), (snap) => atualizarPosicao(snap.val(), markerGustavo));
+
+    </script>
+</body>
+</html>
