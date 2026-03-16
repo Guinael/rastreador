@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Rastreador g8 - Resolvido</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>#map { height: 100vh; width: 100%; } body { margin: 0; }</style>
+</head>
+<body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = { databaseURL: "https://meu-rastreador-7a0a8-default-rtdb.firebaseio.com/" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const map = L.map('map').setView([-15.78, -47.92], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        let marker = L.marker([-15.78, -47.92]).addTo(map);
+
+        onValue(ref(db, 'g8'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Pega o último registro da lista
+                const keys = Object.keys(data);
+                const lastKey = keys[keys.length - 1];
+                const registro = data[lastKey];
+
+                let lat, lon;
+
+                // SE O DADO ESTIVER FORMATADO COMO O SEU (DENTRO DE LOCATION)
+                if (registro.location && registro.location._) {
+                    const texto = registro.location._;
+                    // Extrai os números do texto "&lat=-22.481&lon=-44.049"
+                    const latMatch = texto.match(/lat=([^&]+)/);
+                    const lonMatch = texto.match(/lon=([^&]+)/);
+                    
+                    if (latMatch && lonMatch) {
+                        lat = parseFloat(latMatch[1]);
+                        lon = parseFloat(lonMatch[1]);
+                    }
+                } 
+                // CASO CONTRÁRIO, TENTA O FORMATO PADRÃO
+                else {
+                    lat = registro.lat;
+                    lon = registro.lon;
+                }
+
+                if (lat && lon) {
+                    marker.setLatLng([lat, lon]);
+                    map.setView([lat, lon], 16);
+                    console.log("Sucesso! Localizado em:", lat, lon);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
