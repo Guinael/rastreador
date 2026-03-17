@@ -11,31 +11,58 @@
     <style>
         #map { height: 100vh; width: 100%; } 
         body { margin: 0; padding: 0; background-color: #000; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        
-        /* --- ESTILOS DE IDENTIFICAÇÃO --- */
-        #login-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.98); z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .login-card {
-            background: #111; padding: 30px; border-radius: 15px; border: 1px solid #00ff00;
-            text-align: center; box-shadow: 0 0 20px rgba(0,255,0,0.2);
-        }
-        .login-card h2 { color: #00ff00; margin-top: 0; font-size: 18px; letter-spacing: 1px; }
-        .login-card input {
-            width: 100%; padding: 12px; margin: 15px 0; background: #222; 
-            border: 1px solid #444; color: white; border-radius: 5px; box-sizing: border-box;
-        }
-        .login-card button {
-            background: #00ff00; color: black; border: none; padding: 10px 25px;
-            font-weight: bold; border-radius: 5px; cursor: pointer; width: 100%;
-        }
 
         #clima-painel {
             position: absolute; top: 15px; right: 15px; z-index: 1000;
             background: rgba(0, 0, 0, 0.85); color: white; padding: 15px;
             border-radius: 12px; border: 1px solid #444; min-width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        #clima-painel.recolhido {
+            min-width: auto;
+            width: auto;
+            padding: 10px;
+        }
+
+        #clima-painel.recolhido .painel-header {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        #clima-painel.recolhido .painel-conteudo {
+            display: none;
+        }
+
+        .icones-rapidos {
+            display: none;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #clima-painel.recolhido .icones-rapidos {
+            display: flex;
+        }
+
+        .icone-mini {
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .icone-mini:hover {
+            transform: scale(1.2);
+        }
+
+        .seta-toggle {
+            cursor: pointer;
+            transition: transform 0.3s;
+            font-size: 16px;
+        }
+
+        .seta-toggle.expandido {
+            transform: rotate(180deg);
         }
 
         /* Ajuste do painel para celular */
@@ -43,6 +70,11 @@
             #clima-painel { 
                 width: 90%; right: 5%; left: 5%; min-width: 0; top: 10px; 
                 padding: 10px; box-sizing: border-box;
+            }
+            #clima-painel.recolhido {
+                width: auto;
+                left: auto;
+                right: 5%;
             }
             .btn-lock { width: 45px !important; height: 45px !important; font-size: 18px !important; }
             .nome { font-size: 16px !important; }
@@ -93,48 +125,51 @@
 </head>
 <body>
 
-    <div id="login-overlay">
-        <div class="login-card">
-            <h2>ACESSO AO MONITOR</h2>
-            <input type="text" id="user-name" placeholder="Digite seu nome..." autocomplete="off">
-            <button onclick="fazerLogin()">CONECTAR</button>
-        </div>
-    </div>
-
-    <div id="clima-painel">
+    <div id="clima-painel" class="recolhido">
         <div class="painel-header">
-            <span style="font-size: 10px; color: #aaa; font-weight: bold;">MONITORAMENTO ATIVO</span>
-            <div style="display: flex; gap: 5px;">
-                <button class="btn-lock" onclick="toggleTransito()" title="Trânsito">🚦</button>
-                <button class="btn-lock" onclick="limparRota()" title="Limpar Rota" style="color:#ff4d4d;">✕</button>
+            <div class="icones-rapidos">
+                <span class="icone-mini" onclick="focarDron('g8')" title="Focar G8">👑</span>
+                <span class="icone-mini" onclick="focarDron('miih')" title="Focar Miih">🌸</span>
+                <span class="icone-mini" onclick="focarDron('gustavo')" title="Focar Gustavo">🤖</span>
+            </div>
+            <span style="font-size: 10px; color: #aaa; font-weight: bold; display: none;" id="titulo-painel">MONITORAMENTO ATIVO</span>
+            <div style="display: flex; gap: 5px; align-items: center;">
+                <button class="btn-lock" onclick="toggleTransito()" title="Trânsito" style="display: none;" id="btn-transito">🚦</button>
+                <button class="btn-lock" onclick="limparRota()" title="Limpar Rota" style="color:#ff4d4d; display: none;" id="btn-limpar">✕</button>
+                <span class="seta-toggle" onclick="togglePainel()">▼</span>
             </div>
         </div>
 
-        <div class="info-item">
-            <div class="user-data" onclick="focarDron('g8')">
-                <span class="nome" style="color: #ff4d4d;"><span id="icon-g8">👑</span> <span id="name-g8">G8</span></span>
-                <span id="loc-g8" class="localizacao">Conectando...</span>
-                <span id="detalhes-g8" class="detalhes">--</span>
+        <div class="painel-conteudo">
+            <div class="info-item">
+                <div class="user-data" onclick="focarDron('g8')">
+                    <span class="nome" style="color: #ff4d4d;"><span id="icon-g8">👑</span> <span id="name-g8">G8</span></span>
+                    <span id="loc-g8" class="localizacao">Conectando...</span>
+                    <span id="detalhes-g8" class="detalhes">--</span>
+                    <span id="clima-g8" class="detalhes" style="color: #00d4ff;">🌡️ -- | 💨 --</span>
+                </div>
+                <button id="lock-g8" class="btn-lock" onclick="toggleLock('g8')" title="Seguir G8">🔒</button>
             </div>
-            <button id="lock-g8" class="btn-lock" onclick="toggleLock('g8')" title="Seguir G8">🔒</button>
-        </div>
 
-        <div class="info-item">
-            <div class="user-data" onclick="focarDron('miih')">
-                <span class="nome" style="color: #ee82ee;"><span id="icon-miih">🌸</span> <span id="name-miih">Miih</span></span>
-                <span id="loc-miih" class="localizacao">Conectando...</span>
-                <span id="detalhes-miih" class="detalhes">--</span>
+            <div class="info-item">
+                <div class="user-data" onclick="focarDron('miih')">
+                    <span class="nome" style="color: #ee82ee;"><span id="icon-miih">🌸</span> <span id="name-miih">Miih</span></span>
+                    <span id="loc-miih" class="localizacao">Conectando...</span>
+                    <span id="detalhes-miih" class="detalhes">--</span>
+                    <span id="clima-miih" class="detalhes" style="color: #00d4ff;">🌡️ -- | 💨 --</span>
+                </div>
+                <button id="lock-miih" class="btn-lock" onclick="toggleLock('miih')" title="Seguir Miih">🔒</button>
             </div>
-            <button id="lock-miih" class="btn-lock" onclick="toggleLock('miih')" title="Seguir Miih">🔒</button>
-        </div>
 
-        <div class="info-item">
-            <div class="user-data" onclick="focarDron('gustavo')">
-                <span class="nome" style="color: #4d94ff;"><span id="icon-gustavo">🤖</span> <span id="name-gustavo">Gustavo</span></span>
-                <span id="loc-gustavo" class="localizacao">Conectando...</span>
-                <span id="detalhes-gustavo" class="detalhes">--</span>
+            <div class="info-item">
+                <div class="user-data" onclick="focarDron('gustavo')">
+                    <span class="nome" style="color: #4d94ff;"><span id="icon-gustavo">🤖</span> <span id="name-gustavo">Gustavo</span></span>
+                    <span id="loc-gustavo" class="localizacao">Conectando...</span>
+                    <span id="detalhes-gustavo" class="detalhes">--</span>
+                    <span id="clima-gustavo" class="detalhes" style="color: #00d4ff;">🌡️ -- | 💨 --</span>
+                </div>
+                <button id="lock-gustavo" class="btn-lock" onclick="toggleLock('gustavo')" title="Seguir Gustavo">🔒</button>
             </div>
-            <button id="lock-gustavo" class="btn-lock" onclick="toggleLock('gustavo')" title="Seguir Gustavo">🔒</button>
         </div>
     </div>
 
@@ -184,17 +219,60 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        window.fazerLogin = () => {
-            const nome = document.getElementById('user-name').value.trim();
-            if(nome.length >= 2) {
-                sessionStorage.setItem('nome_monitor', nome);
-                document.getElementById('login-overlay').style.display = 'none';
-            } else { alert("Por favor, digite seu nome."); }
+        // Função para expandir/recolher o painel
+        window.togglePainel = () => {
+            const painel = document.getElementById('clima-painel');
+            const seta = document.querySelector('.seta-toggle');
+            const titulo = document.getElementById('titulo-painel');
+            const btnTransito = document.getElementById('btn-transito');
+            const btnLimpar = document.getElementById('btn-limpar');
+            
+            painel.classList.toggle('recolhido');
+            seta.classList.toggle('expandido');
+            
+            if (painel.classList.contains('recolhido')) {
+                seta.innerText = '▼';
+                titulo.style.display = 'none';
+                btnTransito.style.display = 'none';
+                btnLimpar.style.display = 'none';
+            } else {
+                seta.innerText = '▲';
+                titulo.style.display = 'block';
+                btnTransito.style.display = 'flex';
+                btnLimpar.style.display = 'flex';
+            }
         };
+
+        // Open-Meteo - API de clima GRATUITA sem necessidade de chave
+        async function obterClima(lat, lon) {
+            try {
+                const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                const data = await response.json();
+                return {
+                    temperatura: Math.round(data.current_weather.temperature),
+                    descricao: 'Atual'
+                };
+            } catch (error) {
+                console.error('Erro ao obter clima:', error);
+                return { temperatura: '--', descricao: 'Indisponível' };
+            }
+        }
 
         window.toggleChat = () => {
             const chat = document.getElementById('chat-box');
-            chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
+            const nomeAtual = sessionStorage.getItem('nome_monitor');
+            
+            if (!nomeAtual && chat.style.display !== 'flex') {
+                const nome = prompt('Digite seu nome para usar o chat:');
+                if (nome && nome.trim().length >= 2) {
+                    sessionStorage.setItem('nome_monitor', nome.trim());
+                    chat.style.display = 'flex';
+                } else {
+                    alert('Por favor, digite um nome válido.');
+                }
+            } else {
+                chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
+            }
         };
 
         window.sendChat = () => {
@@ -235,32 +313,107 @@
             const files = Array.from(e.target.files);
             if (files.length > 0) { playlist = files; currentTrackIndex = 0; loadTrack(currentTrackIndex); }
         };
+        
         function loadTrack(index) {
             const file = playlist[index];
             const isVideo = file.type.startsWith('video');
             vContainer.style.display = isVideo ? 'block' : 'none';
             mediaObj.src = URL.createObjectURL(file);
             trackTitle.innerText = `${index + 1}/${playlist.length} ${isVideo ? "🎬" : "🎵"} ${file.name.toUpperCase()}`;
-            mediaObj.play(); playBtnIcon.innerText = "⏸";
+            mediaObj.play(); 
+            playBtnIcon.innerText = "⏸";
         }
-        window.pressPlay = () => { if (!mediaObj.src) return; mediaObj.paused ? mediaObj.play() : mediaObj.pause(); playBtnIcon.innerText = mediaObj.paused ? "▶" : "⏸"; };
-        window.stopMedia = () => { mediaObj.pause(); mediaObj.src = ""; vContainer.style.display = "none"; trackTitle.innerText = "SEM MÍDIA"; progBar.style.width = "0%"; playBtnIcon.innerText = "▶"; playlist = []; };
-        window.nextTrack = () => { if (playlist.length === 0) return; currentTrackIndex = (currentTrackIndex + 1) % playlist.length; loadTrack(currentTrackIndex); };
-        window.prevTrack = () => { if (playlist.length === 0) return; currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length; loadTrack(currentTrackIndex); };
-        mediaObj.ontimeupdate = () => { if (mediaObj.duration) { progBar.style.width = (mediaObj.currentTime / mediaObj.duration * 100) + "%"; document.getElementById('time-now').innerText = fmtTime(mediaObj.currentTime); document.getElementById('time-end').innerText = fmtTime(mediaObj.duration); } };
-        window.manualSeek = (e) => { const rect = e.currentTarget.getBoundingClientRect(); mediaObj.currentTime = ((e.clientX - rect.left) / rect.width) * mediaObj.duration; };
-        function fmtTime(s) { const m = Math.floor(s/60), sec = Math.floor(s%60); return `${m}:${sec < 10 ? '0' : ''}${sec}`; }
+        
+        window.pressPlay = () => { 
+            if (!mediaObj.src) return; 
+            mediaObj.paused ? mediaObj.play() : mediaObj.pause(); 
+            playBtnIcon.innerText = mediaObj.paused ? "▶" : "⏸"; 
+        };
+        
+        window.stopMedia = () => { 
+            mediaObj.pause(); 
+            mediaObj.src = ""; 
+            vContainer.style.display = "none"; 
+            trackTitle.innerText = "SEM MÍDIA"; 
+            progBar.style.width = "0%"; 
+            playBtnIcon.innerText = "▶"; 
+            playlist = []; 
+        };
+        
+        window.nextTrack = () => { 
+            if (playlist.length === 0) return; 
+            currentTrackIndex = (currentTrackIndex + 1) % playlist.length; 
+            loadTrack(currentTrackIndex); 
+        };
+        
+        window.prevTrack = () => { 
+            if (playlist.length === 0) return; 
+            currentTrackIndex = (currentTrackIndex - 1 + playlist.length) % playlist.length; 
+            loadTrack(currentTrackIndex); 
+        };
+        
+        mediaObj.ontimeupdate = () => { 
+            if (mediaObj.duration) { 
+                progBar.style.width = (mediaObj.currentTime / mediaObj.duration * 100) + "%"; 
+                document.getElementById('time-now').innerText = fmtTime(mediaObj.currentTime); 
+                document.getElementById('time-end').innerText = fmtTime(mediaObj.duration); 
+            } 
+        };
+        
+        window.manualSeek = (e) => { 
+            const rect = e.currentTarget.getBoundingClientRect(); 
+            mediaObj.currentTime = ((e.clientX - rect.left) / rect.width) * mediaObj.duration; 
+        };
+        
+        function fmtTime(s) { 
+            const m = Math.floor(s/60), sec = Math.floor(s%60); 
+            return `${m}:${sec < 10 ? '0' : ''}${sec}`; 
+        }
 
         const geocoder = L.Control.geocoder({ defaultMarkGeocode: false, position: 'topleft' }).addTo(map);
-        geocoder.on('markgeocode', (e) => { map.flyTo(e.geocode.center, 17); L.popup().setLatLng(e.geocode.center).setContent(`<b>${e.geocode.name}</b><br><button onclick="irAte(${e.geocode.center.lat}, ${e.geocode.center.lng})" style="width:100%; margin-top:10px;">🚀 IR PARA AQUI</button>`).openOn(map); });
+        geocoder.on('markgeocode', (e) => { 
+            map.flyTo(e.geocode.center, 17); 
+            L.popup().setLatLng(e.geocode.center).setContent(`<b>${e.geocode.name}</b><br><button onclick="irAte(${e.geocode.center.lat}, ${e.geocode.center.lng})" style="width:100%; margin-top:10px;">🚀 IR PARA AQUI</button>`).openOn(map); 
+        });
 
         let controleRota = null, transitoAtivo = false;
         const googleTraffic = L.tileLayer('https://mt1.google.com/vt?lyrs=h@159000000,traffic|seconds_into_week:-1&style=3&x={x}&y={y}&z={z}');
-        window.limparRota = () => { if(controleRota) { map.removeControl(controleRota); controleRota = null; } };
-        window.toggleTransito = () => { transitoAtivo ? map.removeLayer(googleTraffic) : googleTraffic.addTo(map); transitoAtivo = !transitoAtivo; };
-        window.irAte = (lat, lon) => { limparRota(); map.locate({setView: false}); map.once('locationfound', (e) => { controleRota = L.Routing.control({ waypoints: [ L.latLng(e.latlng), L.latLng(lat, lon) ], language: 'pt-BR' }).addTo(map); map.closePopup(); }); };
+        
+        window.limparRota = () => { 
+            if(controleRota) { 
+                map.removeControl(controleRota); 
+                controleRota = null; 
+            } 
+        };
+        
+        window.toggleTransito = () => { 
+            transitoAtivo ? map.removeLayer(googleTraffic) : googleTraffic.addTo(map); 
+            transitoAtivo = !transitoAtivo; 
+        };
+        
+        window.irAte = (lat, lon) => { 
+            limparRota(); 
+            map.locate({setView: false}); 
+            map.once('locationfound', (e) => { 
+                controleRota = L.Routing.control({ 
+                    waypoints: [ L.latLng(e.latlng), L.latLng(lat, lon) ], 
+                    language: 'pt-BR' 
+                }).addTo(map); 
+                map.closePopup(); 
+            }); 
+        };
 
-        const pontosInteresse = { casa: { nome: "Casa", lat: -22.4818724, lon: -44.0492843, raio: 25, cor: '#00ff00', icone: "🏠" }, casaVo: { nome: "Casa da Vó", lat: -22.4816722, lon: -44.0503214, raio: 25, cor: '#ffa500', icone: "👵" }, ronoel: { nome: "Ronoel", lat: -22.47913780425358, lon: -44.0485040059705, raio: 10, cor: '#ffffff', icone: "📍" }, madson: { nome: "Madson", lat: -22.480922713559334, lon: -44.04805947755113, raio: 10, cor: '#ffffff', icone: "📍" }, padaria: { nome: "Padaria Du Vale", lat: -22.480842421901734, lon: -44.04714813233181, raio: 10, cor: '#ffa500', icone: "🥐" } };
+        const pontosInteresse = { 
+            casa: { nome: "Casa", lat: -22.4818724, lon: -44.0492843, raio: 25, cor: '#00ff00', icone: "🏠" }, 
+            casaVo: { nome: "Casa da Vó", lat: -22.4816722, lon: -44.0503214, raio: 25, cor: '#ffa500', icone: "👵" }, 
+            escola: { nome: "Escola", lat: -22.479799074353856, lon: -44.045295827854346, raio: 100, cor: '#4169e1', icone: "🏫" },
+            ronoel: { nome: "Ronoel", lat: -22.47913780425358, lon: -44.0485040059705, raio: 10, cor: '#ffffff', icone: "📍" }, 
+            madson: { nome: "Madson", lat: -22.480922713559334, lon: -44.04805947755113, raio: 10, cor: '#ffffff', icone: "📍" }, 
+            padaria: { nome: "Padaria Du Vale", lat: -22.480842421901734, lon: -44.04714813233181, raio: 10, cor: '#ffa500', icone: "🥐" },
+            guinael: { nome: "Guinael", lat: -22.506785008649363, lon: -44.09261774543911, raio: 70, cor: '#ffffff', icone: "🔧" },
+            michelyne: { nome: "Michelyne", lat: -22.51929994783059, lon: -44.10477092525931, raio: 30, cor: '#ffffff', icone: "🔧" }
+        };
+        
         Object.values(pontosInteresse).forEach(p => L.circle([p.lat, p.lon], { radius: p.raio, color: p.cor, fillOpacity: 0.1, weight: 1 }).addTo(map));
 
         const drones = {
@@ -288,7 +441,13 @@
             }
         };
 
-        window.focarDron = (id) => { const pos = drones[id].marker.getLatLng(); if (pos.lat !== 0) { map.flyTo(pos, 18); drones[id].marker.bindPopup(`<b>${id.toUpperCase()}</b>`).openPopup(); } };
+        window.focarDron = (id) => { 
+            const pos = drones[id].marker.getLatLng(); 
+            if (pos.lat !== 0) { 
+                map.flyTo(pos, 18); 
+                drones[id].marker.bindPopup(`<b>${id.toUpperCase()}</b>`).openPopup(); 
+            } 
+        };
 
         function verificarLocal(lat, lon) {
             for (let chave in pontosInteresse) {
@@ -299,28 +458,37 @@
         }
 
         async function atualizar(snapshot, id) {
-            const data = snapshot.val(); if (!data) return;
+            const data = snapshot.val(); 
+            if (!data) return;
+            
             const keys = Object.keys(data);
             const reg = data.lat ? data : data[keys[keys.length - 1]];
             
-            // CORREÇÃO: Altera apenas o texto dentro do span, mantendo a cor CSS do pai
             if(reg.nome) { 
                 document.getElementById(`name-${id}`).innerText = reg.nome; 
             }
 
             let lat = reg.lat, lon = reg.lon;
+            let velocidade = reg.speed || reg.velocidade || 0;
+            
             if (reg.location && reg.location._) {
                 try {
                     lat = parseFloat(reg.location._.match(/lat=([^&]+)/)[1]);
                     lon = parseFloat(reg.location._.match(/lon=([^&]+)/)[1]);
                 } catch(e) {}
             }
+            
             if (lat && lon && lat !== 0) {
                 const pos = [lat, lon];
                 drones[id].marker.setLatLng(pos);
                 if (drones[id].locked) map.panTo(pos, { animate: true });
+                
                 document.getElementById(`loc-${id}`).innerText = verificarLocal(lat, lon);
                 document.getElementById(`detalhes-${id}`).innerHTML = `<span class="status-dot online"></span> Sincronizado: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                
+                const clima = await obterClima(lat, lon);
+                const velocidadeKmh = Math.round(velocidade * 3.6);
+                document.getElementById(`clima-${id}`).innerHTML = `🌡️ ${clima.temperatura}°C | 💨 ${velocidadeKmh} km/h`;
             }
         }
 
