@@ -165,6 +165,7 @@
                     <span id="loc-g8" class="localizacao">Conectando...</span>
                     <span id="detalhes-g8" class="detalhes">--</span>
                     <span id="clima-g8" class="detalhes" style="color: #00d4ff;">🌡️ -- | 💨 --</span>
+                    <span id="telemetria-g8" class="detalhes" style="color: #00ff00; font-weight: bold;"></span>
                 </div>
                 <button id="lock-g8" class="btn-lock" onclick="toggleLock('g8')" title="Seguir G8">🔒</button>
             </div>
@@ -175,6 +176,7 @@
                     <span id="loc-miih" class="localizacao">Conectando...</span>
                     <span id="detalhes-miih" class="detalhes">--</span>
                     <span id="clima-miih" class="detalhes" style="color: #00d4ff;">🌡️ -- | 💨 --</span>
+                    <span id="telemetria-miih" class="detalhes" style="color: #00ff00; font-weight: bold;"></span>
                 </div>
                 <button id="lock-miih" class="btn-lock" onclick="toggleLock('miih')" title="Seguir Miih">🔒</button>
             </div>
@@ -185,6 +187,7 @@
                     <span id="loc-gustavo" class="localizacao">Conectando...</span>
                     <span id="detalhes-gustavo" class="detalhes">--</span>
                     <span id="clima-gustavo" class="detalhes" style="color: #00d4ff;">🌡️ -- | 💨 --</span>
+                    <span id="telemetria-gustavo" class="detalhes" style="color: #00ff00; font-weight: bold;"></span>
                 </div>
                 <button id="lock-gustavo" class="btn-lock" onclick="toggleLock('gustavo')" title="Seguir Gustavo">🔒</button>
             </div>
@@ -446,9 +449,11 @@
                 document.getElementById(`name-${id}`).innerText = reg.nome; 
             }
 
-            let lat = reg.lat, lon = reg.lon;
+            // LOGICA HIBRIDA WONTRACKS + TRACCAR PARA TODOS OS USUARIOS
+            let lat = reg.lat || reg.latitude;
+            let lon = reg.lon || reg.longitude;
             let velocidade = reg.speed || reg.velocidade || 0;
-            
+
             if (reg.location && reg.location._) {
                 try {
                     lat = parseFloat(reg.location._.match(/lat=([^&]+)/)[1]);
@@ -464,6 +469,21 @@
                 document.getElementById(`loc-${id}`).innerText = verificarLocal(lat, lon);
                 document.getElementById(`detalhes-${id}`).innerHTML = `<span class="status-dot online"></span> Sincronizado: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
                 
+                // TELEMETRIA EXTRA (TRACCAR + OWNTRACKS)
+                const bateria = reg.batt || reg.battery || reg.batteryLevel || "--";
+                let redeInfo = "";
+                
+                if(reg.conn) {
+                    const tipo = reg.conn === "w" ? "Wi-Fi" : (reg.conn === "m" ? "Dados" : "Offline");
+                    const wifiNome = reg.SSID ? `(${reg.SSID})` : "";
+                    redeInfo = ` | 📶 ${tipo} ${wifiNome}`;
+                }
+
+                const telemetriaElem = document.getElementById(`telemetria-${id}`);
+                if(telemetriaElem) {
+                    telemetriaElem.innerHTML = `🔋 ${bateria}%${redeInfo}`;
+                }
+
                 const clima = await obterClima(lat, lon);
                 const velocidadeKmh = Math.round(velocidade * 3.6);
                 document.getElementById(`clima-${id}`).innerHTML = `🌡️ ${clima.temperatura}°C | 💨 ${velocidadeKmh} km/h`;
