@@ -410,8 +410,8 @@
             ronoel: { nome: "Ronoel", lat: -22.47913780425358, lon: -44.0485040059705, raio: 10, cor: '#ffffff', icone: "📍" }, 
             madson: { nome: "Madson", lat: -22.480922713559334, lon: -44.04805947755113, raio: 10, cor: '#ffffff', icone: "📍" }, 
             padaria: { nome: "Padaria Du Vale", lat: -22.480842421901734, lon: -44.04714813233181, raio: 10, cor: '#ffa500', icone: "🥐" },
-            servico: { nome: "Serviço Guinael", lat: -22.506785008649363, lon: -44.09261774543911, raio: 100, cor: '#ffffff', icone: "🔧" },
-            servico: { nome: "Serviço Michelyne", lat: -22.51929994783059, lon: -44.10477092525931, raio: 30, cor: '#ffffff', icone: "🔧" }
+            guinael: { nome: "Serviço Guinael", lat: -22.506785008649363, lon: -44.09261774543911, raio: 70, cor: '#ffffff', icone: "🔧" },
+            michelyne: { nome: "Serviço Michelyne", lat: -22.51929994783059, lon: -44.10477092525931, raio: 30, cor: '#ffffff', icone: "🔧" }
         };
         
         Object.values(pontosInteresse).forEach(p => L.circle([p.lat, p.lon], { radius: p.raio, color: p.cor, fillOpacity: 0.1, weight: 1 }).addTo(map));
